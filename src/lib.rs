@@ -3,16 +3,14 @@ use bdk::blockchain::EsploraBlockchain;
 use bdk::database::MemoryDatabase;
 use bdk::wallet::AddressIndex;
 use bdk::{SyncOptions, Wallet};
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::str::FromStr;
 
 use js_sys::Promise;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::{future_to_promise, spawn_local};
+use wasm_bindgen_futures::future_to_promise;
 
-use log::{debug, info};
-use serde::Deserialize;
+#[cfg(feature = "web-sys")]
+use web_sys::console;
 
 mod utils;
 
@@ -56,11 +54,6 @@ impl WalletWrapper {
             "testnet" | _ => Network::Testnet,
         };
 
-        debug!(
-            "descriptor: {:?}\nchange descriptor {:?}",
-            descriptor, change_descriptor
-        );
-
         let blockchain = EsploraBlockchain::new(&esplora, stop_gap);
         let wallet = Wallet::new(
             descriptor.as_str(),
@@ -80,11 +73,15 @@ impl WalletWrapper {
         let wallet = Rc::clone(&self.wallet);
         let blockchain = Rc::clone(&self.blockchain);
         future_to_promise(async move {
+            #[cfg(feature = "web-sys")]
+            console::log_1(&"before sync".into());
             wallet
                 .as_ref()
                 .sync(blockchain.as_ref(), SyncOptions::default())
                 .await
                 .map_err(|e| format!("{:?}", e))?;
+            #[cfg(feature = "web-sys")]
+            console::log_1(&"after sync".into());
             Ok("done".into())
         })
     }
@@ -92,7 +89,6 @@ impl WalletWrapper {
     #[wasm_bindgen]
     pub fn balance(&self) -> Result<u64, String> {
         let balance = self.wallet.get_balance().map_err(|e| format!("{:?}", e))?;
-        info!("balance: {}", &balance);
         Ok(balance)
     }
 

@@ -20,7 +20,9 @@ async fn test_wallet() -> Result<WalletWrapper, String> {
 async fn test_sync() {
     let wallet = test_wallet().await.expect("wallet");
     let promise = wallet.sync();
-    let result = wasm_bindgen_futures::JsFuture::from(promise).await.expect("result");
+    let result = wasm_bindgen_futures::JsFuture::from(promise)
+        .await
+        .expect("result");
     assert_eq!(result.as_string().unwrap(), "done".to_string());
 
     let balance = wallet.balance().expect("balance");
